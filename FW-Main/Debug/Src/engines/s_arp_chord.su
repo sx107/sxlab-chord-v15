@@ -1,0 +1,2 @@
+s_arp_chord.c:26:6:synth_arp_chord_update	16	static
+s_arp_chord.c:49:6:synth_arp_chord_process	72	static

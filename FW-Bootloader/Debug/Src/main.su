@@ -1,0 +1,2 @@
+main.c:30:9:is_appcode_exist	0	static
+main.c:47:5:main	24	static,ignoring_inline_asm

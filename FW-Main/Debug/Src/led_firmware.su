@@ -1,0 +1,3 @@
+led_firmware.c:54:13:led_firmware_update	16	static
+led_firmware.c:29:6:led_firmware_load	16	static,ignoring_inline_asm
+led_firmware.c:63:6:led_firmware_tick	24	static

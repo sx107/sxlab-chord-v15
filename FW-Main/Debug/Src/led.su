@@ -1,0 +1,8 @@
+led.c:24:6:led_clear	0	static
+led.c:31:10:led_hs_to_color	56	static
+led.c:55:6:led_set_color	0	static
+led.c:59:6:led_set_brightness	0	static
+led.c:63:6:led_set_value	0	static
+led.c:67:6:led_set_all_color	0	static
+led.c:73:6:led_set_eeprom	8	static
+led.c:87:6:led_init	0	static

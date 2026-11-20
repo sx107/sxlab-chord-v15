@@ -1,0 +1,111 @@
+/*
+ * dtmf.c
+ *
+ *  Created on: Sep 29, 2025
+ *      Author: Sx107
+ */
+
+
+#include <dtmf.h>
+#include <main.h>
+
+volatile int8_t cur_dtmf_tone;
+
+const uint32_t dtmfXIncs[] = {432718, 478173, 528639, 584473};
+const uint32_t dtmfYIncs[] = {249466, 275594, 304943, 336797};
+
+uint8_t sineTable[] = {128,134,140,146,152,158,165,170,176,182,188,193,198,203,208,213,218,222,226,230,234,237,240,243,245,248,250,251,253,254,254,255,255,255,254,254,253,251,250,248,245,243,240,237,234,230,226,222,218,213,208,203,198,193,188,182,176,170,165,158,152,146,140,134,128,121,115,109,103,97,90,85,79,73,67,62,57,52,47,42,37,33,29,25,21,18,15,12,10,7,5,4,2,1,1,0,0,0,1,1,2,4,5,7,10,12,15,18,21,25,29,33,37,42,47,52,57,62,67,73,79,85,90,97,103,109,115,121};
+
+volatile uint32_t* const PWM_LEDS[6] = {&PWM_LED1, &PWM_LED2, &PWM_LED3, &PWM_LED4, &PWM_LED5, &PWM_LED6};
+
+void dtmf_configure() {
+	NVIC_SetPriority(TIM1_BRK_UP_TRG_COM_IRQn, 0);
+	NVIC_EnableIRQ(TIM1_BRK_UP_TRG_COM_IRQn);
+
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+
+	// Set A8-A11 pins to Timer CH1-CH4
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODER8_Msk, 0b10 << GPIO_MODER_MODER8_Pos);	// AF
+	MODIFY_REG(GPIOA->AFR[1], GPIO_AFRH_AFRH0_Msk, 2 << GPIO_AFRH_AFRH0_Pos); 	// AF2
+	//MODIFY_REG(GPIOA->OTYPER, 0, GPIO_OTYPER_OT_8);
+
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODER9_Msk, 0b10 << GPIO_MODER_MODER9_Pos);	// AF
+	MODIFY_REG(GPIOA->AFR[1], GPIO_AFRH_AFRH1_Msk, 2 << GPIO_AFRH_AFRH1_Pos); 	// AF2
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODER10_Msk, 0b10 << GPIO_MODER_MODER10_Pos);	// AF
+	MODIFY_REG(GPIOA->AFR[1], GPIO_AFRH_AFRH2_Msk, 2 << GPIO_AFRH_AFRH2_Pos); 	// AF2
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODER11_Msk, 0b10 << GPIO_MODER_MODER11_Pos);	// AF
+	MODIFY_REG(GPIOA->AFR[1], GPIO_AFRH_AFRH3_Msk, 2 << GPIO_AFRH_AFRH3_Pos); 	// AF2
+
+
+	// Configure Timer 1
+	RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+	TIM1->PSC = 0;
+	TIM1->ARR = 1023;
+	TIM1->RCR = 3;
+	TIM1->DIER |= TIM_DIER_UIE;
+	TIM1->CCMR1 |= (0b110 << TIM_CCMR1_OC1M_Pos) | (0b110 << TIM_CCMR1_OC2M_Pos);
+	TIM1->CCMR2 |= (0b110 << TIM_CCMR2_OC3M_Pos) | (0b110 << TIM_CCMR2_OC4M_Pos);
+	TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E;
+	TIM1->CR1 |= TIM_CR1_ARPE;
+	TIM1->BDTR |= TIM_BDTR_MOE;
+	TIM1->CR1 |= TIM_CR1_CEN;
+
+	TIM1->CCR1 = 512;
+	TIM1->CCR2 = 512;
+	TIM1->CCR3 = 512;
+	TIM1->CCR4 = 512;
+
+
+	// Set PB1 to CH4, PB4 to CH1, PB5 to CH2
+	MODIFY_REG(GPIOB->MODER, GPIO_MODER_MODER1_Msk, 0b10 << GPIO_MODER_MODER1_Pos);	// AF
+	MODIFY_REG(GPIOB->AFR[0], GPIO_AFRL_AFRL1_Msk, 1 << GPIO_AFRL_AFRL1_Pos); 	// AF1
+	MODIFY_REG(GPIOB->MODER, GPIO_MODER_MODER4_Msk, 0b10 << GPIO_MODER_MODER4_Pos);	// AF
+	MODIFY_REG(GPIOB->AFR[0], GPIO_AFRL_AFRL4_Msk, 1 << GPIO_AFRL_AFRL4_Pos); 	// AF1
+	MODIFY_REG(GPIOB->MODER, GPIO_MODER_MODER5_Msk, 0b10 << GPIO_MODER_MODER5_Pos);	// AF
+	MODIFY_REG(GPIOB->AFR[0], GPIO_AFRL_AFRL5_Msk, 1 << GPIO_AFRL_AFRL5_Pos); 	// AF1
+
+	// Configure Timer 3
+	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+	TIM3->PSC = 0;
+	TIM3->ARR = 1023;
+	//TIM3->DIER |= TIM_DIER_UIE;
+	TIM3->CCMR1 |= (0b110 << TIM_CCMR1_OC1M_Pos) | (0b110 << TIM_CCMR1_OC2M_Pos);
+	TIM3->CCMR2 |= (0b110 << TIM_CCMR2_OC4M_Pos);
+	TIM3->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC4E;
+	TIM3->CR1 |= TIM_CR1_ARPE;
+	TIM3->CR1 |= TIM_CR1_CEN;
+
+	TIM3->CCR1 = 512;
+	TIM3->CCR2 = 512;
+	TIM3->CCR4 = 512;
+}
+
+void TIM1_BRK_UP_TRG_COM_IRQHandler(void) {
+	static uint32_t cntX = 0;
+	static uint32_t cntY = 0;
+	static uint32_t led_blink_cnt = 0;
+	static uint8_t led_blink_n = 0;
+
+	if (cur_dtmf_tone >= 0) {
+		PWM_AUDIO_OUT = (sineTable[(cntX >> 15) & 0x7F] + sineTable[(cntY >> 15) & 0x7F]) << 1;
+		cntX+=dtmfXIncs[cur_dtmf_tone & 0b11];
+		cntY+=dtmfYIncs[(cur_dtmf_tone >> 2) & 0b11];
+	}
+
+	if ((led_blink_cnt & 0b11) == 0) {
+		for(uint8_t i = 0; i < 6; i++) {
+			if (*PWM_LEDS[i] > 0) {*PWM_LEDS[i] -= 1;}
+		}
+	}
+
+	if ((led_blink_cnt & 0x3FF) == 0) {
+		*PWM_LEDS[led_blink_n++] = 1023;
+		if(led_blink_n >= 6) {led_blink_n = 0;}
+	}
+
+	led_blink_cnt++;
+
+	TIM1->SR &= ~TIM_SR_UIF;
+}
+

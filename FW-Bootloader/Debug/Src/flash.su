@@ -1,0 +1,6 @@
+flash.c:14:12:flash_wait_bsy	16	static
+flash.c:22:12:flash_wait_eop	16	static
+flash.c:31:12:flash_unlock	0	static,ignoring_inline_asm
+flash.c:42:12:flash_lock	0	static
+flash.c:47:12:flash_page_erase	40	static,ignoring_inline_asm
+flash.c:70:12:flash_program_32	16	static

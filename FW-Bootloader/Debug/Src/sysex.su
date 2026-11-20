@@ -1,0 +1,3 @@
+sysex.c:31:6:sysex_configure	8	static
+sysex.c:54:6:parse_sysex	56	static
+sysex.c:319:6:USART1_IRQHandler	8	static

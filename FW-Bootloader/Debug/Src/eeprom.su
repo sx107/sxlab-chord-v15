@@ -1,0 +1,7 @@
+eeprom.c:14:9:eeprom_read8	8	static
+eeprom.c:22:9:eeprom_write8	16	static
+eeprom.c:30:9:eeprom_write16	16	static
+eeprom.c:38:10:eeprom_read16	16	static
+eeprom.c:49:9:eeprom_write_buffer	16	static
+eeprom.c:62:9:eeprom_read_buffer	16	static
+eeprom.c:69:9:eeprom_wait_available	16	static

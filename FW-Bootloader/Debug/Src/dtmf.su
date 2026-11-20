@@ -1,0 +1,2 @@
+dtmf.c:21:6:dtmf_configure	20	static
+dtmf.c:84:6:TIM1_BRK_UP_TRG_COM_IRQHandler	32	static

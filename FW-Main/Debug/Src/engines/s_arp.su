@@ -1,0 +1,4 @@
+s_arp.c:37:6:synth_arp_reset_midi	0	static
+s_arp.c:41:6:synth_arp_update_midi_stack	80	static
+s_arp.c:111:6:synth_arp_update	24	static
+s_arp.c:137:6:synth_arp_process	96	static
